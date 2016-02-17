@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from itertools import chain
 import pandas as pd
+import re
 import requests
 from tqdm import tqdm
 
@@ -9,7 +10,7 @@ base_fmt = '[*{}*,]({}) by {}'.format
 
 def album_year_mo_fmt(x):
     return '[*{}*]({}) ({})'.format(x['title'],
-                                    x['url'],
+                                    re.sub('https?:\/\/', '', x['url']),
                                     pd.to_datetime(x['release_date']).strftime('%-m/%Y'))
 
 
