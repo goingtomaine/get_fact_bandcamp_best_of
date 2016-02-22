@@ -11,7 +11,7 @@ base_fmt = '[*{}*,]({}) by {}'.format
 def album_year_mo_fmt(x):
     return '[*{}*]({}) ({})'.format(x['title'],
                                     re.sub('https?:\/\/', '', x['url']),
-                                    pd.to_datetime(x['release_date']).strftime('%-m/%Y'))
+                                    pd.to_datetime(x['release_date']).strftime('%m/%Y'))
 
 
 def loc_fmt(x):
@@ -62,7 +62,7 @@ def get_markdown(data):
 def get_album_tuple(url):
     try:
         r = requests.get(url)
-        bs = BeautifulSoup(r.text)
+        bs = BeautifulSoup(r.text, 'lxml')
 
         # get artist and title
         title, artist = bs.find('meta', {'name': 'title'})[
@@ -83,19 +83,18 @@ def get_album_tuple(url):
 
 def get_bandcamp_from_fact(fact_url):
     r = requests.get(fact_url)
-    bs = BeautifulSoup(r.text)
+    bs = BeautifulSoup(r.text, 'lxml')
     all_urls = [x['href'].strip() for x in bs.find_all('a')]
     bcamp_urls = [x for x in all_urls if x.find('bandcamp.com') > -1]
 
     results = []
-    for x in tqdm(bcamp_urls, leave=True):
+    for x in tqdm(bcamp_urls, nested=True):
         results.append([fact_url] + get_album_tuple(x))
 
     return pd.DataFrame.from_records(results, columns=['fact', 'url', 'title', 'artist', 'release_date', 'tags'])
 
 
 def get_data():
-
     r = requests.get('http://www.factmag.com/tag/the-best-of-bandcamp/')
     bs = BeautifulSoup(r.text, 'lxml')
     best_of_urls = list(set(x['href'] for x in bs.find_all('a') if x['href'].find(
@@ -130,7 +129,7 @@ def main():
     #
     # all_mkdn = df.apply(get_markdown, axis=1).drop_duplicates().values.tolist()
 
-    all_artists = df.artist.unique()
+    all_artists = sorted(df.artist.unique().tolist())
     all_mkdn = []
     for x in all_artists:
         mkdn = '**{}** &bull; '.format(x)
